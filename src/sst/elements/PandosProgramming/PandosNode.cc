@@ -273,7 +273,15 @@ void PandosNodeT::initCores()
         core->start();
     }
 
+    /*
+     * register this node as the primary component
+     * and do not end the simulation
+     */
+    registerAsPrimaryComponent();
+    primaryComponentDoNotEndSim();
+
     if (getNodeID() == 0) { // if we are node 0
+
         /**
          * enque an initial task on core 0
          */
@@ -291,6 +299,7 @@ void PandosNodeT::initCores()
         auto main_task = pando::backend::NewTask([=]()mutable{
                 my_main(program_argv.size()-1, program_argv.data());
                 out->verbose(CALL_INFO, 1, 0, "my_main() has returned\n");
+                should_exit = true;
             });
         cc0->task_deque.push_front(main_task);
         cc0->setStateType(eCoreReady);
@@ -304,7 +313,10 @@ void PandosNodeT::initCores()
 /**
  * Constructors/Destructors
  */
-PandosNodeT::PandosNodeT(ComponentId_t id, Params &params) : Component(id), program_binary_handle(nullptr) {
+PandosNodeT::PandosNodeT(ComponentId_t id, Params &params)
+    :Component(id)
+    ,program_binary_handle(nullptr)
+    ,should_exit(false) {
     // Read parameters
     bool found;
     int64_t verbose_level = params.find<int32_t>("verbose_level", 0, found);
@@ -747,7 +759,13 @@ void PandosNodeT::receiveRequest(SST::Event *evt, Link **responseLink) {
         receiveDelegateRequest(delegate_req, responseLink);
         return;
     }
-
+    PandosExitEventT *exit_req = dynamic_cast<PandosExitEventT*>(evt);
+    if (exit_req) {
+        out->verbose(CALL_INFO, 1, DEBUG_DELEGATE_REQUESTS, "Received exit packet: response link = %p\n", *responseLink);
+        should_exit = true;
+        delete exit_req;
+        return;
+    }
     out->fatal(CALL_INFO, -1, "Bad event type: line %d\n", __LINE__);    
     abort();
 }
@@ -760,7 +778,14 @@ void PandosNodeT::receiveRequest(SST::Event *evt, Link **responseLink) {
 bool PandosNodeT::clockTic(SST::Cycle_t cycle) {
     using namespace pando;
     using namespace backend;
-        
+
+    if (should_exit) {
+        primaryComponentOKToEndSim();
+        out->verbose(CALL_INFO, 1, DEBUG_INITIALIZATION, "should_exit is true, exiting\n");
+        toRemoteNode->send(new PandosExitEventT);
+        return true;
+    }
+
     // execute some pando program        
     set_current_pando_ctx(pando_context);
         

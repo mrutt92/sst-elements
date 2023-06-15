@@ -16,6 +16,19 @@ public:
 };
 
 /**
+ * A PANDO Quit Packet
+ */
+class PandosExitEventT : public PandosPacketEventT
+{
+public:
+        PandosExitEventT():PandosPacketEventT(){}
+        virtual ~PandosExitEventT() {}
+
+        ImplementSerializable(SST::PandosProgramming::PandosExitEventT);
+};
+
+
+/**
  * A PANDO Request Packet
  */
 class PandosRequestEventT : public PandosPacketEventT {

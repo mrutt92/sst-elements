@@ -231,6 +231,7 @@ public:
         setContextFunc_t set_current_pando_ctx;
         pando::backend::node_context_t *pando_context; //!< PANDO context
         std::vector<pando::backend::core_context_t*> core_contexts; //!< PANDO cores
+        bool should_exit; //!< should the simulation quit
 };
 
 }
