@@ -483,7 +483,7 @@ void PandosNodeT::sendMemoryRequest(int src_core) {
     req->src_core = src_core;
     req->src_pxn = core_ctx->node_ctx->getId();
     req->setDst(core_ctx->core_state.mem_req.addr);
-    out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: Sending memory request to %s\n", __func__, address_to_string(req->getDst()).c_str());
+    out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: Sending memory request to %s\n", __func__, to_string(req->getDst()).c_str());
     // destination?
     if (core_ctx->core_state.mem_req.addr.getPXN() != core_ctx->node_ctx->getId()) {
         /* remote request */
@@ -572,18 +572,18 @@ void *PandosNodeT::translateAddress(const pando::backend::address_t &addr)
 {
     using namespace pando;
     using namespace backend;
-    out->verbose(CALL_INFO, 2, DEBUG_MEMORY_REQUESTS, "%s: translating address = %s\n", __func__, address_to_string(addr).c_str());
+    out->verbose(CALL_INFO, 2, DEBUG_MEMORY_REQUESTS, "%s: translating address = %s\n", __func__, to_string(addr).c_str());
     void *p = nullptr;        
     checkCoreID(CALL_INFO, addr.getCore());
     checkPXNID(CALL_INFO, addr.getPXN());
     if (!addr.getDRAMNotSPM()){
         core_context_t *core_ctx = core_contexts[addr.getCore()];
         p = (void*)&core_ctx->core_local_spm[addr.getAddress()];
-        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: translate address = %s => %p\n",__func__,address_to_string(addr).c_str(),p);
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: translate address = %s => %p\n",__func__,to_string(addr).c_str(),p);
         return reinterpret_cast<void*>(p);
     } else {
         p =  (void*)&pando_context->node_shared_dram[addr.getAddress()];
-        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: translate address = %s => %p\n",__func__,address_to_string(addr).c_str(),p);
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: translate address = %s => %p\n",__func__,to_string(addr).c_str(),p);
         return p;
     }
 }
