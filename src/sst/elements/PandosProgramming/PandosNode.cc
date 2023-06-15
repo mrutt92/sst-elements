@@ -31,7 +31,8 @@ void PandosNodeT::scheduleTaskOnCore(pando::backend::task_t*delegate_task, int t
     out->verbose(CALL_INFO, 3, DEBUG_DELEGATE_REQUESTS|DEBUG_SCHEDULE, "%s: scheduling a task onto core %d\n",
                  __PRETTY_FUNCTION__, target_core);
     target_core_ctx->task_deque.push_back(delegate_task);
-    if (target_core_ctx->getStateType() == eCoreIdle) {
+    if (target_core_ctx->getStateType() == eCoreIdle
+        || target_core_ctx->getStateType() == eCoreIdleAndPolling) {
         target_core_ctx->setStateType(eCoreReady);
     }
     return;
@@ -40,7 +41,7 @@ void PandosNodeT::scheduleTaskOnCore(pando::backend::task_t*delegate_task, int t
 /**
  * schedule work onto a core
  */
-void PandosNodeT::schedule(int thief_core_id) {
+bool PandosNodeT::schedule(int thief_core_id) {
     using namespace pando;
     using namespace backend;
     core_context_t *thief_core_ctx = core_contexts[thief_core_id];
@@ -57,7 +58,7 @@ void PandosNodeT::schedule(int thief_core_id) {
             continue;
         }
         // skip over idle cores
-        if (victim_core_ctx->core_state.type == eCoreIdle) {
+        if (victim_core_ctx->core_state.type == eCoreIdle || victim_core_ctx->core_state.type == eCoreIdleAndPolling) {
             out->verbose(CALL_INFO, 4, DEBUG_SCHEDULE, "%s: victim %d: is idle\n", __func__, victim_core_id);
             continue;
         }
@@ -75,8 +76,11 @@ void PandosNodeT::schedule(int thief_core_id) {
         victim_core_ctx->task_deque.pop_back();
         thief_core_ctx->task_deque.push_front(stolen);
         thief_core_ctx->setStateType(eCoreReady);
-        break;
+        return true;
     }
+
+    // no work to steal
+    return false;
 }
 
 
@@ -782,7 +786,8 @@ bool PandosNodeT::clockTic(SST::Cycle_t cycle) {
     if (should_exit) {
         primaryComponentOKToEndSim();
         out->verbose(CALL_INFO, 1, DEBUG_INITIALIZATION, "should_exit is true, exiting\n");
-        toRemoteNode->send(new PandosExitEventT);
+        if (toRemoteNode)
+            toRemoteNode->send(new PandosExitEventT);
         return true;
     }
 
@@ -790,6 +795,7 @@ bool PandosNodeT::clockTic(SST::Cycle_t cycle) {
     set_current_pando_ctx(pando_context);
         
     // have each core execute if not busy
+    bool no_work = false;
     for (int core_id = 0; core_id < core_contexts.size(); core_id++) {
         core_context_t *core = core_contexts[core_id];
         // TODO: this should maybe be a while () loop instead...
@@ -804,8 +810,19 @@ bool PandosNodeT::clockTic(SST::Cycle_t cycle) {
             sendDelegateRequest(core_id);
             break;
         case eCoreIdle:
-            out->verbose(CALL_INFO, 2, DEBUG_SCHEDULE, "core %d is idle\n", core_id);                        
-            schedule(core_id);
+            out->verbose(CALL_INFO, 2, DEBUG_SCHEDULE, "core %d is idle\n", core_id);
+            if (!no_work) {
+                no_work = !schedule(core_id);
+                if (!no_work) {
+                    core->execute();
+                }
+            }
+            break;
+        case eCoreIdleAndPolling:
+            out->verbose(CALL_INFO, 2, DEBUG_SCHEDULE, "core %d is idle and polling\n", core_id);
+            no_work = !schedule(core_id);
+            core->execute();
+            break;
         case eCoreReady:
             core->execute();
             break;

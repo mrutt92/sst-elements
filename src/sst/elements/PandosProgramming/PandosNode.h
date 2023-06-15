@@ -185,7 +185,7 @@ public:
         /**
          * schedule work onto a core
          */
-        void schedule(int core_id);
+        bool  schedule(int core_id);
 
         /**
          * parse the program argument vector
