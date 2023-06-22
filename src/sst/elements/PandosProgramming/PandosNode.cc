@@ -46,6 +46,11 @@ bool PandosNodeT::schedule(int thief_core_id) {
     using namespace backend;
     core_context_t *thief_core_ctx = core_contexts[thief_core_id];
     out->verbose(CALL_INFO, 3, DEBUG_SCHEDULE, "%s: scheduling for thief core %d\n", __func__, thief_core_id);
+    if (!thief_core_ctx->task_deque.empty()) {
+        out->verbose(CALL_INFO, 3, DEBUG_SCHEDULE, "%s: thief core %d has work\n", __func__, thief_core_id);
+        thief_core_ctx->setStateType(eCoreReady);
+        return true;
+    }
     // search for a core that's not idle
     for (int victim_core_id = 0;
          victim_core_id < core_contexts.size();
@@ -55,6 +60,14 @@ bool PandosNodeT::schedule(int thief_core_id) {
         // skip over self                
         if (victim_core_id == thief_core_id) {
             out->verbose(CALL_INFO, 4, DEBUG_SCHEDULE, "%s: victim %d: = thief\n", __func__, victim_core_id);
+            if (!victim_core_ctx->task_deque.empty()) {
+                // should never happen
+                out->fatal(CALL_INFO, -1, "%s: thief %d has work already: victim_core_id = %d\n"
+                           ,__func__
+                           ,thief_core_id
+                           ,victim_core_id);
+            }
+            assert(victim_core_ctx->task_deque.empty() && "thief core has work");
             continue;
         }
         // skip over idle cores
