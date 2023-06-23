@@ -70,11 +70,6 @@ bool PandosNodeT::schedule(int thief_core_id) {
             assert(victim_core_ctx->task_deque.empty() && "thief core has work");
             continue;
         }
-        // skip over idle cores
-        if (victim_core_ctx->core_state.type == eCoreIdle || victim_core_ctx->core_state.type == eCoreIdleAndPolling) {
-            out->verbose(CALL_INFO, 4, DEBUG_SCHEDULE, "%s: victim %d: is idle\n", __func__, victim_core_id);
-            continue;
-        }
         // skip over if task queeu is empty
         if (victim_core_ctx->task_deque.empty()) {
             out->verbose(CALL_INFO, 4, DEBUG_SCHEDULE, "%s: victim %d: task queue empty\n", __func__, victim_core_id);
