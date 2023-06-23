@@ -401,7 +401,7 @@ PandosNodeT::PandosNodeT(ComponentId_t id, Params &params)
     out->verbose(CALL_INFO, 1, DEBUG_INITIALIZATION, "fromRemoteNode     = %p\n", fromRemoteNode);
 
     // Register clock
-    registerClock("1GHz", new Clock::Handler<PandosNodeT>(this, &PandosNodeT::clockTic));
+    registerClock("125MHz", new Clock::Handler<PandosNodeT>(this, &PandosNodeT::clockTic));
 }
 
 PandosNodeT::~PandosNodeT() {
