@@ -472,12 +472,14 @@ void PandosNodeT::sendMemoryRequest(int src_core) {
         /* read request */
         PandosReadRequestEventT *read_req = new PandosReadRequestEventT;
         read_req->size = core_ctx->core_state.mem_req.size;
-        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "core %d: Sending memory request with size = %ld\n",
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "core %d: Sending memory read request with size = %ld\n",
                      src_core, core_ctx->core_state.mem_req.size);
         core_ctx->setStateType(eCoreStallMemoryRead);
         req = read_req;
     } else if (core_ctx->core_state.type == eCoreIssueMemoryWrite) {
         /* write request */
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "core %d: Sending memory write request with size = %ld\n",
+                     src_core, core_ctx->core_state.mem_req.size);
         PandosWriteRequestEventT *write_req = new PandosWriteRequestEventT;
         write_req->size = core_ctx->core_state.mem_req.size;
         write_req->payload.resize(write_req->size);
@@ -488,6 +490,8 @@ void PandosNodeT::sendMemoryRequest(int src_core) {
         req = write_req;
     } else if (core_ctx->core_state.type == eCoreIssueMemoryAtomicIntegerAdd) {
         /* atomic add request */
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "core %d: Sending memory atomic add request with size = %ld\n",
+                     src_core, core_ctx->core_state.mem_req.size);
         PandosAtomicIAddRequestEventT *amoadd_req = new PandosAtomicIAddRequestEventT;
         amoadd_req->size = core_ctx->core_state.mem_req.size;
         amoadd_req->payload.resize(amoadd_req->size);
@@ -546,7 +550,7 @@ void PandosNodeT::sendMemoryRequest(int src_core) {
 void PandosNodeT::receiveResponse(SST::Event *evt, Link** requestLink) {
     using namespace pando;
     using namespace backend;
-    out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received packet on link\n");
+    out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received response packet on link\n");
     PandosResponseEventT *rsp = dynamic_cast<PandosResponseEventT*>(evt);
     if (!rsp) {
         out->fatal(CALL_INFO, -1, "Bad event type: line %d\n", __LINE__);
@@ -565,23 +569,33 @@ void PandosNodeT::receiveResponse(SST::Event *evt, Link** requestLink) {
     // was this a read response?
     PandosReadResponseEventT *read_rsp = dynamic_cast<PandosReadResponseEventT*>(rsp);
     if (read_rsp) {
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received memory read response\n");
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "read_rsp->payload.size() = %zu, read_rsp->size = %ld\n"
+                     ,read_rsp->payload.size()
+                     ,read_rsp->size);
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Copying read response payload(%p) to core state(%p)\n"
+                     ,read_rsp->payload.data(), core_ctx->core_state.mem_req.data);
         memcpy(core_ctx->core_state.mem_req.data, read_rsp->payload.data(), read_rsp->size);
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Copied read response payload to core state\n");
         core_ctx->setStateType(eCoreReady);        
     }
 
     PandosWriteResponseEventT *write_rsp = dynamic_cast<PandosWriteResponseEventT*>(rsp);
     if (write_rsp) {
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received memory write response\n");
         core_ctx->setStateType(eCoreReady);
     }
 
     PandosAtomicIAddResponseEventT *amoadd_rsp = dynamic_cast<PandosAtomicIAddResponseEventT*>(rsp);
     if (amoadd_rsp) {
+        out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received memory atomic add response\n");
         memcpy(core_ctx->core_state.mem_req.data, amoadd_rsp->payload.data(), amoadd_rsp->size);
         core_ctx->setStateType(eCoreReady);
     }
 
     PandosDelegateResponseEventT *delegate_rsp = dynamic_cast<PandosDelegateResponseEventT*>(rsp);
     if (delegate_rsp) {
+        out->verbose(CALL_INFO, 1, DEBUG_DELEGATE_REQUESTS, "Received delegate response\n");
         ;
     }
 
@@ -602,10 +616,16 @@ void *PandosNodeT::translateAddress(const pando::backend::address_t &addr)
     checkPXNID(CALL_INFO, addr.getPXN());
     if (!addr.getDRAMNotSPM()){
         core_context_t *core_ctx = core_contexts[addr.getCore()];
+        if (addr.getAddress() >= core_ctx->core_local_spm.size()) {
+            out->fatal(CALL_INFO, -1, "%s: address %s out of range\n", __func__, to_string(addr).c_str());
+        }
         p = (void*)&core_ctx->core_local_spm[addr.getAddress()];
         out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: translate address = %s => %p\n",__func__,to_string(addr).c_str(),p);
         return reinterpret_cast<void*>(p);
     } else {
+        if (addr.getAddress() >= pando_context->node_shared_dram.size()) {
+            out->fatal(CALL_INFO, -1, "%s: address %s out of range\n", __func__, to_string(addr).c_str());
+        }
         p =  (void*)&pando_context->node_shared_dram[addr.getAddress()];
         out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "%s: translate address = %s => %p\n",__func__,to_string(addr).c_str(),p);
         return p;
@@ -743,7 +763,7 @@ void PandosNodeT::receiveReadRequest(PandosReadRequestEventT *read_req, Link **r
  * handle a request for memory operation
  */
 void PandosNodeT::receiveRequest(SST::Event *evt, Link **responseLink) {
-    out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received packet on link\n");    
+    out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received request packet on link\n");    
     PandosReadRequestEventT *read_req = dynamic_cast<PandosReadRequestEventT*>(evt);
     if (read_req) {
         out->verbose(CALL_INFO, 1, DEBUG_MEMORY_REQUESTS, "Received read packet: response link = %p\n", *responseLink);
