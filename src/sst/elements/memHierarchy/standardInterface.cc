@@ -514,6 +514,11 @@ Event* StandardInterface::MemEventConverter::convert(StandardMem::MoveData* req)
 }
 Event* StandardInterface::MemEventConverter::convert(StandardMem::CustomReq* req) {
     CustomMemEvent* creq = new CustomMemEvent(iface->getName(), Command::CustomReq, req->data);
+    Addr bAddr = req->data->getRoutingAddress();
+    creq->setDst(iface->link_->getTargetDestination(bAddr));
+    creq->setRqstr(iface->getName());
+    creq->setThreadID(req->tid);
+
     if (!req->needsResponse())
         creq->setFlag(MemEventBase::F_NORESPONSE);
 
