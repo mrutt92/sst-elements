@@ -325,6 +325,7 @@ EXTRA_DIST = \
 
 sstdir = $(includedir)/sst/elements/memHierarchy
 nobase_sst_HEADERS = \
+	memEventCustom.h \
 	memEventBase.h \
 	memEvent.h \
 	memNICBase.h \
