@@ -36,7 +36,7 @@ class CustomCmdMemHandler : public SST::SubComponent {
 
 public:
 
-    SST_ELI_REGISTER_SUBCOMPONENT_API(SST::MemHierarchy::CustomCmdMemHandler, std::function<void(Addr,size_t,std::vector<uint8_t>&)>, std::function<void(Addr,std::vector<uint8_t>*)>)
+    SST_ELI_REGISTER_SUBCOMPONENT_API(SST::MemHierarchy::CustomCmdMemHandler, std::function<void(Addr,size_t,std::vector<uint8_t>&)>, std::function<void(Addr,std::vector<uint8_t>*)>, std::function<Addr(Addr)>)
 
     class MemEventInfo {
     public:
@@ -53,7 +53,7 @@ public:
 
     /* Constructor */
 
-    CustomCmdMemHandler(ComponentId_t id, Params &params, std::function<void(Addr,size_t,std::vector<uint8_t>&)> read, std::function<void(Addr,std::vector<uint8_t>*)> write) : SubComponent(id) {
+    CustomCmdMemHandler(ComponentId_t id, Params &params, std::function<void(Addr,size_t,std::vector<uint8_t>&)> read, std::function<void(Addr,std::vector<uint8_t>*)> write, std::function<Addr(Addr)> globalToLocal) : SubComponent(id) {
         /* Create debug output */
         int debugLevel = params.find<int>("debug_level", 0);
         int debugLoc = params.find<int>("debug", 0);
@@ -69,6 +69,7 @@ public:
         // Calls to read & write data
         readData = read;
         writeData = write;
+        translateGlobalToLocal = globalToLocal;
     }
 
     /* Destructor */
@@ -109,7 +110,7 @@ protected:
 
     std::function<void(Addr,size_t,std::vector<uint8_t>&)> readData;
     std::function<void(Addr,std::vector<uint8_t>*)> writeData;
-
+    std::function<Addr(Addr)> translateGlobalToLocal;
 };
 
 } //namespace memHierarchy

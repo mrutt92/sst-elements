@@ -43,8 +43,8 @@ public:
 
 /* Begin class defintion */
 
-  DefCustomCmdMemHandler(ComponentId_t id, Params &params, std::function<void(Addr,size_t,std::vector<uint8_t>&)> read, std::function<void(Addr,std::vector<uint8_t>*)> write)
-    : CustomCmdMemHandler(id, params, read, write) {}
+  DefCustomCmdMemHandler(ComponentId_t id, Params &params, std::function<void(Addr,size_t,std::vector<uint8_t>&)> read, std::function<void(Addr,std::vector<uint8_t>*)> write, std::function<Addr(Addr)> globalToLocal)
+    : CustomCmdMemHandler(id, params, read, write, globalToLocal) {}
 
   ~DefCustomCmdMemHandler() {}
 
