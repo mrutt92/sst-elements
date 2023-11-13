@@ -52,6 +52,10 @@ using namespace SST::MemHierarchy;
  *  10 - address translation
  */
 
+std::vector<std::tuple<Addr,Addr,MemController*>> MemController::AddrRangeToMC;
+std::mutex MemController::AddrRangeToMCMutex;
+std::atomic<bool> MemController::AddrRangeToMCSorted;
+
 /*************************** Memory Controller ********************/
 MemController::MemController(ComponentId_t id, Params &params) : Component(id), backing_(NULL) {
 
@@ -198,6 +202,10 @@ MemController::MemController(ComponentId_t id, Params &params) : Component(id), 
                 "(addr_range_start, addr_range_end, interleave_size, interleave_step) were detected. All addresses will map to "
                 "this memory: if this is intended, you may ignore this warning or set addr_range_start to 0 in your input deck "
                 "to eliminate this warning.\n", getName().c_str());
+    } else {
+        AddrRangeToMCMutex.lock();
+        AddrRangeToMC.push_back({addrStart, addrEnd, this});
+        AddrRangeToMCMutex.unlock();
     }
 
     // Ensure SI units are power-2 not power-10 - for backward compability
@@ -573,6 +581,15 @@ void MemController::init(unsigned int phase) {
 void MemController::setup(void) {
     memBackendConvertor_->setup();
     link_->setup();
+    if (!AddrRangeToMCSorted.exchange(true)) {
+        AddrRangeToMCMutex.lock();
+        std::sort(AddrRangeToMC.begin(), AddrRangeToMC.end(),
+                  [](const std::tuple<Addr,Addr,MemController*>& lhs,
+                     const std::tuple<Addr,Addr,MemController*>& rhs) {
+                      return std::get<0>(lhs) < std::get<0>(rhs);
+                  });
+        AddrRangeToMCMutex.unlock();
+    }
 }
 
 

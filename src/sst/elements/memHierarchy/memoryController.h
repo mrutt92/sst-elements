@@ -94,6 +94,11 @@ public:
     void writeData(Addr addr, std::vector<uint8_t>* data);
     void readData(Addr addr, size_t size, std::vector<uint8_t>& data);
 
+    /* For getting raw pointers to the backing store */
+    static std::vector<std::tuple<Addr,Addr,MemController*>> AddrRangeToMC;
+    static std::mutex AddrRangeToMCMutex;
+    static std::atomic<bool> AddrRangeToMCSorted;
+
 protected:
     MemController();  // for serialization only
     virtual ~MemController() {
@@ -126,8 +131,10 @@ protected:
     int dlevel;
 
     MemBackendConvertor*    memBackendConvertor_;
+public:
     Backend::Backing*       backing_;
 
+protected:
     MemLinkBase* link_;         // Link to the rest of memHierarchy
     bool clockLink_;            // Flag - should we call clock() on this link or not
 
@@ -146,9 +153,11 @@ protected:
 
     MemRegion region_; // Which address region we are, for translating to local addresses
     Addr privateMemOffset_; // If we reserve any memory locations for ourselves/directories/etc. and they are NOT part of the physical address space, shift regular addresses by this much
+public:
     Addr translateToLocal(Addr addr);
     Addr translateToGlobal(Addr addr);
 
+protected:
     Clock::Handler<MemController>* clockHandler_;
     TimeConverter* clockTimeBase_;
 
