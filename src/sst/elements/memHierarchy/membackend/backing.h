@@ -81,7 +81,7 @@ public:
             data[i] = m_buffer[addr + i];
     }
 
-private:
+    //private:
     uint8_t* m_buffer;
     int m_fd;
     int m_size;
