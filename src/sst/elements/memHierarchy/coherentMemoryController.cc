@@ -223,6 +223,7 @@ void CoherentMemController::handleReplacement(MemEvent * ev) {
     if (ev->isAddrGlobal()) {
         ev->setBaseAddr(translateToLocal(ev->getBaseAddr()));
         ev->setAddr(translateToLocal(ev->getAddr()));
+        ev->setAddrGlobal(false);
     }
 
     /* Handle shootdown race where no further Ack is expected */
@@ -290,6 +291,7 @@ void CoherentMemController::handleFlush(MemEvent * ev) {
     if (ev->isAddrGlobal()) {
         ev->setBaseAddr(translateToLocal(ev->getBaseAddr()));
         ev->setAddr(translateToLocal(ev->getAddr()));
+        ev->setAddrGlobal(false);
     }
 
     /* Resolve races with shootdowns
@@ -369,6 +371,7 @@ void CoherentMemController::handleAckInv(MemEvent * ev) {
     if (ev->isAddrGlobal()) {
         ev->setBaseAddr(translateToLocal(ev->getBaseAddr()));
         ev->setAddr(translateToLocal(ev->getAddr()));
+        ev->setAddrGlobal(false);
     }
 
     Addr baseAddr = ev->getBaseAddr();
@@ -398,6 +401,7 @@ void CoherentMemController::handleFetchResp(MemEvent * ev) {
     if (ev->isAddrGlobal()) {
         ev->setBaseAddr(translateToLocal(ev->getBaseAddr()));
         ev->setAddr(translateToLocal(ev->getAddr()));
+        ev->setAddrGlobal(false);
     }
 
     Addr baseAddr = ev->getBaseAddr();
