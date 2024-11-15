@@ -139,6 +139,8 @@ protected:
         virtual SST::Event* convert(StandardMem::WriteResp* req) override;
         virtual SST::Event* convert(StandardMem::FlushAddr* req) override;
         virtual SST::Event* convert(StandardMem::FlushResp* req) override;
+        virtual SST::Event* convert(StandardMem::FlushLine* req) override;
+        virtual SST::Event* convert(StandardMem::FlushLineResp* req) override;
         virtual SST::Event* convert(StandardMem::ReadLock* req) override;
         virtual SST::Event* convert(StandardMem::WriteUnlock* req) override;
         virtual SST::Event* convert(StandardMem::LoadLink* req) override;
@@ -170,6 +172,7 @@ private:
     StandardMem::Request* convertResponseGetSResp(StandardMem::Request* req, MemEventBase* meb);
     StandardMem::Request* convertResponseWriteResp(StandardMem::Request* req, MemEventBase* meb);
     StandardMem::Request* convertResponseFlushResp(StandardMem::Request* req, MemEventBase* meb);
+    StandardMem::Request* convertResponseFlushLineIdxResp(StandardMem::Request *req, MemEventBase *meb);
     StandardMem::Request* convertResponseAckMove(StandardMem::Request* req, MemEventBase* meb);
     StandardMem::Request* convertResponseCustomResp(StandardMem::Request* req, MemEventBase* meb);
     StandardMem::Request* convertRequestInv(MemEventBase* req);

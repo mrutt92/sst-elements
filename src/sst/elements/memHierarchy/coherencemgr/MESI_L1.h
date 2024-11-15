@@ -373,6 +373,7 @@ public:
     bool handleGetSResp(MemEvent * event, bool inMSHR);
     bool handleGetXResp(MemEvent * event, bool inMSHR);
     bool handleFlushLineResp(MemEvent * event, bool inMSHR);
+    bool handleFlushLineIdx(MemEvent* event, bool inMSHR);
     bool handleAckPut(MemEvent * event, bool inMSHR);
     bool handleNULLCMD(MemEvent * event, bool inMSHR);
     bool handleNACK(MemEvent * event, bool inMSHR);

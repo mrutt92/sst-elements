@@ -363,6 +363,57 @@ bool MESIL1::handleGetSX(MemEvent* event, bool inMSHR) {
     return (status == MemEventStatus::Reject) ? false: true;
 }
 
+bool MESIL1::handleFlushLineIdx(MemEvent* event, bool inMSHR) {
+    L1CacheLine *line = cacheArray_->lookupByIndex(event->getLineIdx(), false);
+    State state = line ? line->getState() : I;
+    if (state == I) {
+        sendResponseUp(event, nullptr, inMSHR, timestamp_, true);
+        return true;
+    }
+
+    Addr addr = line ? line->getAddr() : event->getBaseAddr();
+    event->setAddr(addr);
+    event->setBaseAddr(addr);
+
+    if (!inMSHR && mshr_->exists(addr)) {
+        return (allocateMSHR(event, false) == MemEventStatus::Reject) ? false : true;
+    } else if (inMSHR) {
+        mshr_->removePendingRetry(addr);
+    }
+
+    /* If we're here, state is stable */
+
+    /* Flush fails if line is locked */
+    if (state != I && line->isLocked(timestamp_)) {
+        if (!inMSHR || !mshr_->getProfiled(addr)) {
+            stat_eventState[(int)Command::FlushLine][state]->addData(1);
+            recordLatencyType(event->getID(), LatType::MISS);
+        }
+        sendResponseUp(event, nullptr, inMSHR, line->getTimestamp(), false);
+        cleanUpAfterRequest(event, inMSHR);
+
+        return true;
+    }
+
+    /* if we're here, we can flush the line */
+    if (!inMSHR && (allocateMSHR(event, false) == MemEventStatus::Reject)) {
+        return false;
+    }
+
+    if (!mshr_->getProfiled(addr)) {
+        stat_eventState[(int)Command::FlushLineIdx][state]->addData(1);
+        recordLatencyType(event->getID(), LatType::MISS);
+        mshr_->setProfiled(addr);
+    }
+
+    mshr_->setInProgress(addr);
+    forwardFlush(event, line, (state == M || state == E));
+    if (line && state != I)
+        line->setState(S_B);
+
+    return true;
+}
+
 bool MESIL1::handleFlushLine(MemEvent* event, bool inMSHR) {
     Addr addr = event->getBaseAddr();
     L1CacheLine* line = cacheArray_->lookup(addr, false);

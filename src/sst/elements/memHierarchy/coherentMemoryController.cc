@@ -159,6 +159,7 @@ void CoherentMemController::handleEvent(SST::Event* event) {
             break;
         case Command::FlushLine:
         case Command::FlushLineInv:
+        case Command::FlushLineIdx:
             handleFlush(static_cast<MemEvent*>(ev));
             break;
         case Command::PutM:
@@ -191,6 +192,7 @@ void CoherentMemController::handleRequest(MemEvent * ev) {
     if (ev->isAddrGlobal()) {
         ev->setBaseAddr(translateToLocal(ev->getBaseAddr()));
         ev->setAddr(translateToLocal(ev->getAddr()));
+        ev->setAddrGlobal(false);
     }
 
     outstandingEventList_.insert(std::make_pair(ev->getID(), OutstandingEvent(ev, ev->getBaseAddr())));
@@ -354,10 +356,10 @@ void CoherentMemController::handleFlush(MemEvent * ev) {
             cacheStatus_.at(ev->getBaseAddr()/lineSize_) = false;
             ev->setCmd(Command::FlushLine);
         }
-        if (is_debug_event(put)) {
+        if (is_debug_event(ev)) {
             Debug(_L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
                     getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1, getName().c_str(), 
-                    put->getVerboseString().c_str());
+                    ev->getVerboseString().c_str());
         }
         memBackendConvertor_->handleMemEvent(ev);
     } else { // TODO resolve potential race with a not-yet-started shootdown sitting in the MSHR?
@@ -595,9 +597,10 @@ void CoherentMemController::finishMemReq(SST::Event::id_type id, uint32_t flags)
 
     resp->setFlags(flags);
 
-    if (ev->isAddrGlobal()) {
+    if (!ev->isAddrGlobal()) {
         resp->setBaseAddr(translateToGlobal(ev->getBaseAddr()));
         resp->setAddr(translateToGlobal(ev->getAddr()));
+        resp->setAddrGlobal(true);
     }
     
     if (is_debug_event(resp)) {
@@ -702,6 +705,12 @@ void CoherentMemController::replayMemEvent(MemEvent * ev) {
         case Command::FlushLineInv:
             cacheStatus_.at(ev->getBaseAddr()/lineSize_) = false;
             ev->setCmd(Command::FlushLine);
+            memBackendConvertor_->handleMemEvent(ev);
+            break;
+        case Command::FlushLineIdx:
+            ev->setCmd(Command::FlushLine);
+            memBackendConvertor_->handleMemEvent(ev);
+            break;
         case Command::FlushLine:
             memBackendConvertor_->handleMemEvent(ev);
             break;

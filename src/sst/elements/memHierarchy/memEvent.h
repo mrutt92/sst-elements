@@ -250,6 +250,9 @@ public:
     void setDirty(bool status) { dirty_ = status; }
     bool getDirty() { return dirty_; }
 
+    Addr getLineIdx() const { return lineIdx_; }
+    void setLineIdx(Addr lineIdx) { lineIdx_ = lineIdx; }
+
     virtual MemEvent* clone(void) override {
         return new MemEvent(*this);
     }
@@ -309,7 +312,7 @@ private:
     bool            isEvict_;           // Whether an event is an eviction
     Addr	    instPtr_;           // Instruction pointer associated with the request
     Addr 	    vAddr_;             // Virtual address associated with the request
-
+    Addr            lineIdx_ = 0;       // Index of a cache line
     MemEvent() : MemEventBase() {} // For serialization only
 
 public:

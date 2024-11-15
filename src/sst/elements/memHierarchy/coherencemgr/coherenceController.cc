@@ -206,6 +206,12 @@ bool CoherenceController::handleFlushLineInv(MemEvent* event, bool inMSHR) {
     return false;
 }
 
+bool CoherenceController::handleFlushLineIdx(MemEvent * event, bool inMSHR) {
+    debug->fatal(CALL_INFO, -1, "%s, Error: FlushLineIdx events are not handled by this coherence manager. Event: %s. Time: %" PRIu64 "ns.\n",
+            getName().c_str(), event->getVerboseString().c_str(), getCurrentSimTimeNano());
+    return false;
+}
+
 bool CoherenceController::handlePutS(MemEvent* event, bool inMSHR) {
     debug->fatal(CALL_INFO, -1, "%s, Error: PutS events are not handled by this coherence manager. Event: %s. Time: %" PRIu64 "ns.\n",
             getName().c_str(), event->getVerboseString().c_str(), getCurrentSimTimeNano());
@@ -250,6 +256,12 @@ bool CoherenceController::handleWriteResp(MemEvent* event, bool inMSHR) {
 
 bool CoherenceController::handleFlushLineResp(MemEvent* event, bool inMSHR) {
     debug->fatal(CALL_INFO, -1, "%s, Error: FlushLineResp events are not handled by this coherence manager. Event: %s. Time: %" PRIu64 "ns.\n",
+            getName().c_str(), event->getVerboseString().c_str(), getCurrentSimTimeNano());
+    return false;
+}
+
+bool CoherenceController::handleFlushLineIdxResp(MemEvent * event, bool inMSHR) {
+    debug->fatal(CALL_INFO, -1, "%s, Error: FlushLineIdxResp events are not handled by this coherence manager. Event: %s. Time: %" PRIu64 "ns.\n",
             getName().c_str(), event->getVerboseString().c_str(), getCurrentSimTimeNano());
     return false;
 }
