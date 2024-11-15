@@ -54,7 +54,7 @@ enum class MemEventType { Cache, Move, Custom };                    // For parsi
     X(FlushLine,        FlushLineResp,  Request,    Request,        1, 0,   Cache)   /* Request to flush a cache line */\
     X(FlushLineInv,     FlushLineResp,  Request,    Request,        1, 0,   Cache)   /* Request to flush and invalidate a cache line */\
     X(FlushAll,         FlushAllResp,   Request,    Request,        1, 0,   Cache)   /* Request to flush entire cache - similar to wbinvd */\
-    X(FlushLineIdx,     FlushLineIdxResp, Request, Request,        1, 0,   Cache)   /* Request to flush a cache line by index */\
+    X(FlushLineIdx,     FlushLineResp,  Request,    Request,        1, 0,   Cache)   /* Request to flush a cache line by index */ \
     /* Request Responses */\
     X(GetSResp,         NULLCMD,        Response,   Data,           0, 0,   Cache)   /* Response to a GetS request */\
     X(GetXResp,         NULLCMD,        Response,   Data,           0, 0,   Cache)   /* Response to a GetX request */\

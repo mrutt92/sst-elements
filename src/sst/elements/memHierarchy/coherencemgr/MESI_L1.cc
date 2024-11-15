@@ -386,7 +386,7 @@ bool MESIL1::handleFlushLineIdx(MemEvent* event, bool inMSHR) {
     /* Flush fails if line is locked */
     if (state != I && line->isLocked(timestamp_)) {
         if (!inMSHR || !mshr_->getProfiled(addr)) {
-            stat_eventState[(int)Command::FlushLine][state]->addData(1);
+            stat_eventState[(int)Command::FlushLineIdx][state]->addData(1);
             recordLatencyType(event->getID(), LatType::MISS);
         }
         sendResponseUp(event, nullptr, inMSHR, line->getTimestamp(), false);
@@ -963,6 +963,10 @@ bool MESIL1::handleGetXResp(MemEvent* event, bool inMSHR) {
     return true;
 }
 
+
+bool MESIL1::handleFlushLineIdxResp(MemEvent * event, bool inMSHR) {
+    return false;
+}
 
 bool MESIL1::handleFlushLineResp(MemEvent * event, bool inMSHR) {
     Addr addr = event->getBaseAddr();
