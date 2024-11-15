@@ -294,6 +294,9 @@ bool Cache::processEvent(MemEventBase* ev, bool inMSHR) {
         case Command::FlushLineIdxResp:
             accepted = coherenceMgr_->handleFlushLineIdxResp(event, inMSHR);
             break;
+        case Command::InvLineIdx:
+            accepted = coherenceMgr_->handleInvLineIdx(event, inMSHR);
+            break;
         case Command::PutS:
             accepted = coherenceMgr_->handlePutS(event, inMSHR);
             break;

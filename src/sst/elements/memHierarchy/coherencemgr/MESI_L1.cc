@@ -574,6 +574,58 @@ bool MESIL1::handleFetch(MemEvent* event, bool inMSHR) {
     return true;
 }
 
+bool MESIL1::handleInvLineIdx(MemEvent* event, bool inMSHR) {
+    L1CacheLine* line = cacheArray_->lookupByIndex(event->getLineIdx(), false);
+    State state = line ? line->getState() : I;
+
+    if (is_debug_event(event))
+        eventDI.prefill(event->getID(), Command::InvLineIdx, false, event->getBaseAddr(), state);
+
+    if (inMSHR)
+        mshr_->removePendingRetry(event->getBaseAddr());
+
+    event->setAddr(line->getAddr());
+    event->setBaseAddr(line->getAddr());
+
+    snoopInvalidation(event, line);
+    stat_eventState[(int)Command::InvLineIdx][state]->addData(1);
+    if (line)
+        recordPrefetchResult(line, statPrefetchInv);
+
+    switch (state) {
+    case S:
+    case S_B: // Inv raced with our FlushLine; ordering Inv before FlushLine
+        line->atomicEnd();
+        line->setState(I);
+        break;
+    case SM: // Inv raced with our upgrade; ordering Inv before upgrade
+        line->atomicEnd();
+        line->setState(IM);
+        break;
+    case I_B:
+        line->setState(I);
+    case IS:
+    case IM:
+    case I:
+        if (is_debug_event(event))
+            eventDI.action = "Ignore";
+        break;
+    default:
+        debug->fatal(CALL_INFO, -1, "%s, Error: Received InvLineIdx in unhandled state '%s'. Event: %s. Time = %" PRIu64 "ns\n",
+                     cachename_.c_str(), StateString[state], event->getVerboseString().c_str(), getCurrentSimTimeNano());
+    }
+
+    sendResponseUp(event, nullptr, inMSHR, timestamp_, false);
+
+    if (is_debug_addr(event->getBaseAddr()) && line) {
+        eventDI.newst = line->getState();
+        eventDI.verboseline = line->getString();
+    }
+
+    delete event;
+    return true;
+}
+
 bool MESIL1::handleInv(MemEvent* event, bool inMSHR) {
     Addr addr = event->getBaseAddr();
     L1CacheLine* line = cacheArray_->lookup(addr, false);

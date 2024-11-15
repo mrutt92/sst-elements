@@ -70,6 +70,7 @@ enum class MemEventType { Cache, Move, Custom };                    // For parsi
     /* Invalidations*/\
     X(Inv,              AckInv,         Request,    ForwardRequest, 0, 0,   Cache)   /* Other write request:  Invalidate cache line */\
     X(ForceInv,         AckInv,         Request,    ForwardRequest, 0, 0,   Cache)   /* Force invalidation even if line is modified */ \
+    X(InvLineIdx,       FlushLineResp,  Request,    ForwardRequest, 0, 0,   Cache)   /* Invalidate a cache line by index */\
     /* Invalidates - sent by directory controller */\
     X(Fetch,            FetchResp,      Request,    ForwardRequest, 0, 0,   Cache)   /* Other read request to sharer:  Get data but don't invalidate cache line */\
     X(FetchInv,         FetchResp,      Request,    ForwardRequest, 0, 0,   Cache)   /* Other write request to owner:  Invalidate cache line */\

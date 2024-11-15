@@ -423,10 +423,29 @@ SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::FlushLine
     flush->setDst(iface->link_->getTargetDestination(bAddr));
     flush->setVirtualAddress(req->vAddr);
     flush->setInstructionPointer(req->iPtr);
+    flush->setLineIdx(req->lineId);
     if (req->getNoncacheable())
         flush->setFlag(MemEvent::F_NONCACHEABLE);
-    flush->setLineIdx(req->lineId);
     return flush;
+}
+
+SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::InvLine *req) {
+    Addr bAddr = (iface->lineSize_ == 0 || req->getNoncacheable()) ? req->pAddr : req->pAddr & iface->baseAddrMask_;
+    MemEvent* inv = new MemEvent(iface->getName(), req->pAddr, bAddr, Command::InvLineIdx, 0);
+    inv->setRqstr(iface->getName());
+    inv->setThreadID(req->tid);
+    inv->setDst(iface->link_->getTargetDestination(bAddr));
+    inv->setVirtualAddress(req->vAddr);
+    inv->setInstructionPointer(req->iPtr);
+    inv->setLineIdx(req->lineId);
+    if (req->getNoncacheable())
+        inv->setFlag(MemEvent::F_NONCACHEABLE);
+    return inv;
+}
+
+SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::InvLineResp *req) {
+    output.fatal(CALL_INFO, -1, "%s, Error: InvLineResp converter not implemented\n", iface->getName().c_str());
+    return nullptr;
 }
 
 Event* StandardInterface::MemEventConverter::convert(StandardMem::ReadLock* req) {

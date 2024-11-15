@@ -76,6 +76,7 @@ public:
     virtual bool handleWriteResp(MemEvent * event, bool inMSHR);
     virtual bool handleFlushLineResp(MemEvent * event, bool inMSHR);
     virtual bool handleFlushLineIdxResp(MemEvent * event, bool inMSHR);
+    virtual bool handleInvLineIdx(MemEvent *event, bool inMSHR);
     virtual bool handleAckPut(MemEvent * event, bool inMSHR);
     virtual bool handleAckInv(MemEvent * event, bool inMSHR);
     virtual bool handleFetchResp(MemEvent * event, bool inMSHR);

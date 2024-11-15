@@ -367,6 +367,7 @@ public:
     bool handleFlushLineInv(MemEvent * event, bool inMSHR);
     bool handleFetch(MemEvent * event, bool inMSHR);
     bool handleInv(MemEvent * event, bool inMSHR);
+    bool handleInvLineIdx(MemEvent* event, bool inMSHR);
     bool handleForceInv(MemEvent * event, bool inMSHR);
     bool handleFetchInv(MemEvent * event, bool inMSHR);
     bool handleFetchInvX(MemEvent * event, bool inMSHR);

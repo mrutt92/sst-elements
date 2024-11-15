@@ -266,6 +266,12 @@ bool CoherenceController::handleFlushLineIdxResp(MemEvent * event, bool inMSHR) 
     return false;
 }
 
+bool CoherenceController::handleInvLineIdx(MemEvent *event, bool inMSHR) {
+    debug->fatal(CALL_INFO, -1, "%s, Error: InvLineIdx events are not handled by this coherence manager. Event: %s. Time: %" PRIu64 "ns.\n",
+            getName().c_str(), event->getVerboseString().c_str(), getCurrentSimTimeNano());
+    return false;
+}
+
 bool CoherenceController::handleAckPut(MemEvent* event, bool inMSHR) {
     debug->fatal(CALL_INFO, -1, "%s, Error: AckPut events are not handled by this coherence manager. Event: %s. Time: %" PRIu64 "ns.\n",
             getName().c_str(), event->getVerboseString().c_str(), getCurrentSimTimeNano());

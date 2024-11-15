@@ -141,6 +141,8 @@ protected:
         virtual SST::Event* convert(StandardMem::FlushResp* req) override;
         virtual SST::Event* convert(StandardMem::FlushLine* req) override;
         virtual SST::Event* convert(StandardMem::FlushLineResp* req) override;
+        virtual SST::Event* convert(StandardMem::InvLine *req) override;
+        virtual SST::Event* convert(StandardMem::InvLineResp *req) override;
         virtual SST::Event* convert(StandardMem::ReadLock* req) override;
         virtual SST::Event* convert(StandardMem::WriteUnlock* req) override;
         virtual SST::Event* convert(StandardMem::LoadLink* req) override;
