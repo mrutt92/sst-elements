@@ -367,12 +367,15 @@ public:
     bool handleFlushLineInv(MemEvent * event, bool inMSHR);
     bool handleFetch(MemEvent * event, bool inMSHR);
     bool handleInv(MemEvent * event, bool inMSHR);
+    bool handleInvLineIdx(MemEvent* event, bool inMSHR);
     bool handleForceInv(MemEvent * event, bool inMSHR);
     bool handleFetchInv(MemEvent * event, bool inMSHR);
     bool handleFetchInvX(MemEvent * event, bool inMSHR);
     bool handleGetSResp(MemEvent * event, bool inMSHR);
     bool handleGetXResp(MemEvent * event, bool inMSHR);
     bool handleFlushLineResp(MemEvent * event, bool inMSHR);
+    bool handleFlushLineIdx(MemEvent* event, bool inMSHR);
+    bool handleFlushLineIdxResp(MemEvent * event, bool inMSHR);
     bool handleAckPut(MemEvent * event, bool inMSHR);
     bool handleNULLCMD(MemEvent * event, bool inMSHR);
     bool handleNACK(MemEvent * event, bool inMSHR);

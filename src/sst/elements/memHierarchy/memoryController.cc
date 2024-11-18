@@ -419,6 +419,7 @@ void MemController::handleEvent(SST::Event* event) {
 
         case Command::FlushLine:
         case Command::FlushLineInv:
+        case Command::FlushLineIdx:
             {
                 MemEvent* put = NULL;
                 if ( ev->getPayloadSize() != 0 ) {

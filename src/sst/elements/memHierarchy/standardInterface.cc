@@ -238,6 +238,9 @@ void StandardInterface::receive(SST::Event* ev) {
             case Command::FlushLineResp:
                 deliverReq = convertResponseFlushResp(origReq, me);
                 break;
+            case Command::FlushLineIdxResp:
+                deliverReq = convertResponseFlushLineIdxResp(origReq, me);
+                break;
             case Command::AckMove:
                 deliverReq = convertResponseAckMove(origReq, me);
                 break;
@@ -412,6 +415,39 @@ SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::FlushAddr
     return flush;
 }
 
+SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::FlushLine* req) {
+    Addr bAddr = (iface->lineSize_ == 0 || req->getNoncacheable()) ? req->pAddr : req->pAddr & iface->baseAddrMask_;
+    MemEvent *flush = new MemEvent(iface->getName(), req->pAddr, bAddr, Command::FlushLineIdx);
+    flush->setRqstr(iface->getName());
+    flush->setThreadID(req->tid);
+    flush->setDst(iface->link_->getTargetDestination(bAddr));
+    flush->setVirtualAddress(req->vAddr);
+    flush->setInstructionPointer(req->iPtr);
+    flush->setLineIdx(req->lineId);
+    if (req->getNoncacheable())
+        flush->setFlag(MemEvent::F_NONCACHEABLE);
+    return flush;
+}
+
+SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::InvLine *req) {
+    Addr bAddr = (iface->lineSize_ == 0 || req->getNoncacheable()) ? req->pAddr : req->pAddr & iface->baseAddrMask_;
+    MemEvent* inv = new MemEvent(iface->getName(), req->pAddr, bAddr, Command::InvLineIdx, 0);
+    inv->setRqstr(iface->getName());
+    inv->setThreadID(req->tid);
+    inv->setDst(iface->link_->getTargetDestination(bAddr));
+    inv->setVirtualAddress(req->vAddr);
+    inv->setInstructionPointer(req->iPtr);
+    inv->setLineIdx(req->lineId);
+    if (req->getNoncacheable())
+        inv->setFlag(MemEvent::F_NONCACHEABLE);
+    return inv;
+}
+
+SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::InvLineResp *req) {
+    output.fatal(CALL_INFO, -1, "%s, Error: InvLineResp converter not implemented\n", iface->getName().c_str());
+    return nullptr;
+}
+
 Event* StandardInterface::MemEventConverter::convert(StandardMem::ReadLock* req) {
     Addr bAddr = (iface->lineSize_ == 0 || req->getNoncacheable()) ? req->pAddr : req->pAddr & iface->baseAddrMask_;
     MemEvent* read = new MemEvent(iface->getName(), req->pAddr, bAddr, Command::GetSX, req->size);
@@ -550,6 +586,12 @@ SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::WriteResp
     }
     return meresp;
 }
+
+SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::FlushLineResp* req) {
+    output.fatal(CALL_INFO, -1, "%s, Error: FlushLineResp converter not implemented\n", iface->getName().c_str());
+    return nullptr;
+}
+
 SST::Event* StandardInterface::MemEventConverter::convert(StandardMem::FlushResp* req) { 
     output.fatal(CALL_INFO, -1, "%s, Error: FlushResp converter not implemented\n", iface->getName().c_str());
     return nullptr; 
@@ -602,6 +644,10 @@ StandardMem::Request* StandardInterface::convertResponseFlushResp(StandardMem::R
         resp->unsetSuccess();
     }
     return resp;
+}
+
+StandardMem::Request* StandardInterface::convertResponseFlushLineIdxResp(StandardMem::Request *req, MemEventBase *meb) {
+    return req->makeResponse();
 }
 
 StandardMem::Request* StandardInterface::convertResponseAckMove(StandardMem::Request* req, UNUSED(MemEventBase* meb)) {

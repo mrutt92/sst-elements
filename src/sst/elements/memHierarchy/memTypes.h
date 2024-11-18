@@ -54,12 +54,14 @@ enum class MemEventType { Cache, Move, Custom };                    // For parsi
     X(FlushLine,        FlushLineResp,  Request,    Request,        1, 0,   Cache)   /* Request to flush a cache line */\
     X(FlushLineInv,     FlushLineResp,  Request,    Request,        1, 0,   Cache)   /* Request to flush and invalidate a cache line */\
     X(FlushAll,         FlushAllResp,   Request,    Request,        1, 0,   Cache)   /* Request to flush entire cache - similar to wbinvd */\
+    X(FlushLineIdx,     FlushLineResp,  Request,    Request,        1, 0,   Cache)   /* Request to flush a cache line by index */ \
     /* Request Responses */\
     X(GetSResp,         NULLCMD,        Response,   Data,           0, 0,   Cache)   /* Response to a GetS request */\
     X(GetXResp,         NULLCMD,        Response,   Data,           0, 0,   Cache)   /* Response to a GetX request */\
     X(WriteResp,        NULLCMD,        Response,   Ack,            0, 0,   Cache)   /* Response to a Write request*/\
     X(FlushLineResp,    NULLCMD,        Response,   Ack,            0, 0,   Cache)   /* Response to FlushLine request */\
     X(FlushAllResp,     NULLCMD,        Response,   Ack,            0, 0,   Cache)   /* Response to FlushAll request */\
+    X(FlushLineIdxResp, NULLCMD,        Response,   Ack,            0, 0,   Cache)   /* Response to FlushLineIdx request */\
     /* Writebacks, these commands also serve as invalidation acknowledgments */\
     X(PutS,             AckPut,         Request,    Request,        1, 1,   Cache)   /* Clean replacement from S->I:      Remove sharer */\
     X(PutM,             AckPut,         Request,    Request,        1, 1,   Cache)   /* Dirty replacement from M/O->I:    Remove owner and writeback data */\
@@ -68,6 +70,7 @@ enum class MemEventType { Cache, Move, Custom };                    // For parsi
     /* Invalidations*/\
     X(Inv,              AckInv,         Request,    ForwardRequest, 0, 0,   Cache)   /* Other write request:  Invalidate cache line */\
     X(ForceInv,         AckInv,         Request,    ForwardRequest, 0, 0,   Cache)   /* Force invalidation even if line is modified */ \
+    X(InvLineIdx,       FlushLineResp,  Request,    ForwardRequest, 0, 0,   Cache)   /* Invalidate a cache line by index */\
     /* Invalidates - sent by directory controller */\
     X(Fetch,            FetchResp,      Request,    ForwardRequest, 0, 0,   Cache)   /* Other read request to sharer:  Get data but don't invalidate cache line */\
     X(FetchInv,         FetchResp,      Request,    ForwardRequest, 0, 0,   Cache)   /* Other write request to owner:  Invalidate cache line */\

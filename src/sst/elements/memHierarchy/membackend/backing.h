@@ -64,10 +64,19 @@ public:
     }
 
     void set( Addr addr, uint8_t value ) {
+        // if ((addr - m_offset) > m_size) {
+        //     Output out("", 1, 0, Output::STDOUT);
+        //     out.fatal(CALL_INFO, -1, "BackingMMAP: Error - write beyond end of memory. Addr: 0x%" PRIx64 ", Memory Size: %zu\n", addr, m_size);
+        // }
         m_buffer[addr - m_offset ] = value;
     }
 
     void set (Addr addr, size_t size, std::vector<uint8_t> &data) {
+        // if (addr + size > m_size) {
+        //     Output out("", 1, 0, Output::STDOUT);
+        //     out.fatal(CALL_INFO, -1, "BackingMMAP: Error - write beyond end of memory. Addr: 0x%" PRIx64 ", Size: %zu, Memory Size: %zu\n", addr, size, m_size);
+        // }
+
         for (size_t i = 0; i < size; i++)
             m_buffer[addr + i] = data[i];
     }
@@ -77,6 +86,11 @@ public:
     }
 
     void get( Addr addr, size_t size, std::vector<uint8_t> &data) {
+        // if (addr + size > m_size) {
+        //     Output out("", 1, 0, Output::STDOUT);
+        //     out.fatal(CALL_INFO, -1, "BackingMMAP: Error - read beyond end of memory. Addr: 0x%" PRIx64 ", Size: %zu, Memory Size: %zu\n", addr, size, m_size);
+        // }
+
         for (size_t i = 0; i < size; i++)
             data[i] = m_buffer[addr + i];
     }

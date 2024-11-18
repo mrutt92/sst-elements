@@ -363,6 +363,57 @@ bool MESIL1::handleGetSX(MemEvent* event, bool inMSHR) {
     return (status == MemEventStatus::Reject) ? false: true;
 }
 
+bool MESIL1::handleFlushLineIdx(MemEvent* event, bool inMSHR) {
+    L1CacheLine *line = cacheArray_->lookupByIndex(event->getLineIdx(), false);
+    State state = line ? line->getState() : I;
+    if (state == I) {
+        sendResponseUp(event, nullptr, inMSHR, timestamp_, true);
+        return true;
+    }
+
+    Addr addr = line ? line->getAddr() : event->getBaseAddr();
+    event->setAddr(addr);
+    event->setBaseAddr(addr);
+
+    if (!inMSHR && mshr_->exists(addr)) {
+        return (allocateMSHR(event, false) == MemEventStatus::Reject) ? false : true;
+    } else if (inMSHR) {
+        mshr_->removePendingRetry(addr);
+    }
+
+    /* If we're here, state is stable */
+
+    /* Flush fails if line is locked */
+    if (state != I && line->isLocked(timestamp_)) {
+        if (!inMSHR || !mshr_->getProfiled(addr)) {
+            stat_eventState[(int)Command::FlushLineIdx][state]->addData(1);
+            recordLatencyType(event->getID(), LatType::MISS);
+        }
+        sendResponseUp(event, nullptr, inMSHR, line->getTimestamp(), false);
+        cleanUpAfterRequest(event, inMSHR);
+
+        return true;
+    }
+
+    /* if we're here, we can flush the line */
+    if (!inMSHR && (allocateMSHR(event, false) == MemEventStatus::Reject)) {
+        return false;
+    }
+
+    if (!mshr_->getProfiled(addr)) {
+        stat_eventState[(int)Command::FlushLineIdx][state]->addData(1);
+        recordLatencyType(event->getID(), LatType::MISS);
+        mshr_->setProfiled(addr);
+    }
+
+    mshr_->setInProgress(addr);
+    forwardFlush(event, line, (state == M || state == E));
+    if (line && state != I)
+        line->setState(S_B);
+
+    return true;
+}
+
 bool MESIL1::handleFlushLine(MemEvent* event, bool inMSHR) {
     Addr addr = event->getBaseAddr();
     L1CacheLine* line = cacheArray_->lookup(addr, false);
@@ -518,6 +569,58 @@ bool MESIL1::handleFetch(MemEvent* event, bool inMSHR) {
     }
 
     stat_eventState[(int)Command::Fetch][state]->addData(1);
+
+    delete event;
+    return true;
+}
+
+bool MESIL1::handleInvLineIdx(MemEvent* event, bool inMSHR) {
+    L1CacheLine* line = cacheArray_->lookupByIndex(event->getLineIdx(), false);
+    State state = line ? line->getState() : I;
+
+    if (is_debug_event(event))
+        eventDI.prefill(event->getID(), Command::InvLineIdx, false, event->getBaseAddr(), state);
+
+    if (inMSHR)
+        mshr_->removePendingRetry(event->getBaseAddr());
+
+    event->setAddr(line->getAddr());
+    event->setBaseAddr(line->getAddr());
+
+    snoopInvalidation(event, line);
+    stat_eventState[(int)Command::InvLineIdx][state]->addData(1);
+    if (line)
+        recordPrefetchResult(line, statPrefetchInv);
+
+    switch (state) {
+    case S:
+    case S_B: // Inv raced with our FlushLine; ordering Inv before FlushLine
+        line->atomicEnd();
+        line->setState(I);
+        break;
+    case SM: // Inv raced with our upgrade; ordering Inv before upgrade
+        line->atomicEnd();
+        line->setState(IM);
+        break;
+    case I_B:
+        line->setState(I);
+    case IS:
+    case IM:
+    case I:
+        if (is_debug_event(event))
+            eventDI.action = "Ignore";
+        break;
+    default:
+        debug->fatal(CALL_INFO, -1, "%s, Error: Received InvLineIdx in unhandled state '%s'. Event: %s. Time = %" PRIu64 "ns\n",
+                     cachename_.c_str(), StateString[state], event->getVerboseString().c_str(), getCurrentSimTimeNano());
+    }
+
+    sendResponseUp(event, nullptr, inMSHR, timestamp_, false);
+
+    if (is_debug_addr(event->getBaseAddr()) && line) {
+        eventDI.newst = line->getState();
+        eventDI.verboseline = line->getString();
+    }
 
     delete event;
     return true;
@@ -912,6 +1015,10 @@ bool MESIL1::handleGetXResp(MemEvent* event, bool inMSHR) {
     return true;
 }
 
+
+bool MESIL1::handleFlushLineIdxResp(MemEvent * event, bool inMSHR) {
+    return false;
+}
 
 bool MESIL1::handleFlushLineResp(MemEvent * event, bool inMSHR) {
     Addr addr = event->getBaseAddr();

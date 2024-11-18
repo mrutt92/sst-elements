@@ -76,6 +76,8 @@ class CacheArray {
             If updateReplacement is set, the replacement stats are updated */
         T * lookup(Addr addr, bool updateReplacement);
 
+        T * lookupByIndex(Addr lineIndex, bool updateReplacement);
+
         /** Identify a replacement candidate using the replacement manager */
         T * findReplacementCandidate(Addr addr);
 
@@ -171,6 +173,13 @@ T* CacheArray<T>::lookup(const Addr addr, bool updateReplacement) {
         }
     }
     return nullptr; // Not found
+}
+
+template <class T>
+T * CacheArray<T>::lookupByIndex(Addr lineIndex, bool updateReplacement) {
+    if (updateReplacement)
+        replacementMgr_->update(lineIndex, lines_[lineIndex]->getReplacementInfo());
+    return lines_[lineIndex];
 }
 
 template <class T>
